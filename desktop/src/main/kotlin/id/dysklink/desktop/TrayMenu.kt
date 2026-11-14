@@ -2,7 +2,7 @@ package id.dysklink.desktop
 
 import id.phonelink.android.core.HubPhone
 
-/** The parts of the tray menu that can be shown, hidden and moved, as the Mac's menu bar in Advanced. Quit is always last. */
+/** The parts of the tray menu that can be shown, hidden and moved, as the Mac's menu bar in Advanced. Report a problem and Quit are always last. */
 enum class TraySection(val label: String, val needs: String?, private val block: Int) {
     Open("Open DyskLink", null, 0),
     Battery("This PC's battery", "Shows on a PC with a battery", 1),
@@ -86,6 +86,7 @@ class TrayMenuActions(
     val pcCare: () -> Unit = {},
     val launcher: () -> Unit = {},
     val restoreLayout: (String) -> Unit = {},
+    val reportProblem: () -> Unit = {},
     val quit: () -> Unit = {},
 )
 
@@ -131,6 +132,7 @@ object TrayMenu {
                 lastGroup = section.group
             }
             if (isNotEmpty()) add(TrayEntry.Separator)
+            add(TrayEntry.Item(Support.REPORT_TITLE, onClick = actions.reportProblem))
             add(TrayEntry.Item("Quit DyskLink", onClick = actions.quit))
         }
     }

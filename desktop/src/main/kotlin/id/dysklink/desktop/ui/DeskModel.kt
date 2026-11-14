@@ -73,6 +73,10 @@ interface DeskModel {
     fun recheckHost() {}
     /** A hint's button: a web page or a system settings screen. */
     fun openLink(url: String) {}
+    /** "Report a problem": opens WhatsApp with the app version and system filled in. */
+    fun reportProblem() {}
+    /** Opening WhatsApp failed, so Settings › About shows the number to copy. */
+    val reportFailed: StateFlow<Boolean> get() = NO_REPORT_FAILURE
     /** A hint's button that DyskLink handles, such as installing the Windows camera driver. */
     fun hintAction(id: String) {}
 
@@ -258,6 +262,7 @@ interface DeskModel {
 
 private val MEMORY_GAME_KEYS = GameKeyStore(null)
 private val NO_HINTS: StateFlow<HostHints> = kotlinx.coroutines.flow.MutableStateFlow(HostHints())
+private val NO_REPORT_FAILURE: StateFlow<Boolean> = kotlinx.coroutines.flow.MutableStateFlow(false)
 
 /** How the camera window shows the picture. Kept here so the window and the tab agree. */
 class CameraView {

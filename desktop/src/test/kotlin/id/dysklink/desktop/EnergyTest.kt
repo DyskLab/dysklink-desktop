@@ -230,9 +230,9 @@ class EnergyTest {
         val config = TrayMenuConfig(listOf(TraySection.Battery, TraySection.EnergyApp), setOf(TraySection.Battery, TraySection.EnergyApp))
         val labels = TrayMenu.build(config, TrayMenuState(battery = "62%", topEnergyApp = "Google Chrome (high)"), TrayMenuActions())
             .filterIsInstance<TrayEntry.Item>().map { it.label }
-        assertEquals(listOf("Battery: 62%", "Top energy app: Google Chrome (high)", "Quit DyskLink"), labels)
+        assertEquals(listOf("Battery: 62%", "Top energy app: Google Chrome (high)", "Report a problem", "Quit DyskLink"), labels)
         // Nothing above the threshold: no line.
         val none = TrayMenu.build(config, TrayMenuState(battery = "62%"), TrayMenuActions()).filterIsInstance<TrayEntry.Item>().map { it.label }
-        assertEquals(listOf("Battery: 62%", "Quit DyskLink"), none)
+        assertEquals(listOf("Battery: 62%", "Report a problem", "Quit DyskLink"), none)
     }
 }

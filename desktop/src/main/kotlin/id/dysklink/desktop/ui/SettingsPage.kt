@@ -201,6 +201,34 @@ fun SettingsPage(model: DeskModel) {
             }
             Divider()
             UpdateCard(model)
+            Divider()
+            ReportProblemRow(model)
+        }
+    }
+}
+
+/** Opens WhatsApp to the developer; when that fails, the number to copy. */
+@Composable
+private fun ReportProblemRow(model: DeskModel) {
+    val colors = Dysk.colors
+    val failed by model.reportFailed.collectAsState()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(colors.sky.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+            DyskIcon(DyskIcons.Message, colors.sky, 17.dp)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f).padding(end = Space.sm)) {
+            Text(id.dysklink.desktop.Support.REPORT_TITLE, color = colors.textPrimary, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
+            Text(id.dysklink.desktop.Support.REPORT_DETAIL, color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
+        }
+        SecondaryButton("Open WhatsApp", icon = DyskIcons.PopOut, onClick = model::reportProblem)
+    }
+    if (failed) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(id.dysklink.desktop.Support.FAILURE_MESSAGE, color = colors.amberText, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f).padding(end = Space.sm))
+            SecondaryButton("Copy", icon = DyskIcons.Copy) { model.copyText(id.dysklink.desktop.Support.WHATSAPP_NUMBER_DISPLAY) }
         }
     }
 }

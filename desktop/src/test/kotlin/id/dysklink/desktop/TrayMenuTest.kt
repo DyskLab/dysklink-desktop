@@ -26,7 +26,7 @@ class TrayMenuTest {
         assertEquals(
             listOf(
                 "Open DyskLink", "-", "Battery: 54%", "Start focus", "Drink a glass of water", "Tools…", "-",
-                "Pixel 8: 76%, charging", "Galaxy Tab: offline", "-", "Send file to Pixel 8…", "Send clipboard", "Clipboard history", "-", "Quit DyskLink",
+                "Pixel 8: 76%, charging", "Galaxy Tab: offline", "-", "Send file to Pixel 8…", "Send clipboard", "Clipboard history", "-", "Report a problem", "Quit DyskLink",
             ),
             labels(TrayMenu.build(TrayMenuConfig(), state, TrayMenuActions())),
         )
@@ -41,6 +41,7 @@ class TrayMenuTest {
         assertEquals(TraySection.SendClipboard, config.visible[config.visible.indexOf(TraySection.SendFile) - 1])
         val menu = labels(TrayMenu.build(config.move(TraySection.Launcher, -1).move(TraySection.Launcher, -1), state.copy(trayStatus = "Focus 1/4: 24:59", pomodoroStarted = true, pomodoroRunning = true), TrayMenuActions()))
         assertEquals("Quit DyskLink", menu.last())
+        assertEquals("Report a problem", menu[menu.size - 2])
         assertTrue("Focus 1/4: 24:59" in menu && "Pause focus" in menu)
         assertTrue("Drink a glass of water" !in menu && "Tools…" !in menu)
         assertTrue(menu.indexOf("Send clipboard") < menu.indexOf("Send file to Pixel 8…"))
@@ -54,10 +55,10 @@ class TrayMenuTest {
     fun emptySectionsStayHiddenAndQuitStays() {
         val all = TrayMenuConfig(shown = TraySection.entries.toSet())
         val bare = labels(TrayMenu.build(all, TrayMenuState(), TrayMenuActions()))
-        assertEquals(listOf("Open DyskLink", "-", "Start focus", "Drink a glass of water", "Tools…", "-", "Send file…", "Send clipboard", "-", "Quit DyskLink"), bare)
-        assertEquals(listOf("Quit DyskLink"), labels(TrayMenu.build(TrayMenuConfig(shown = emptySet()), state, TrayMenuActions())))
+        assertEquals(listOf("Open DyskLink", "-", "Start focus", "Drink a glass of water", "Tools…", "-", "Send file…", "Send clipboard", "-", "Report a problem", "Quit DyskLink"), bare)
+        assertEquals(listOf("Report a problem", "Quit DyskLink"), labels(TrayMenu.build(TrayMenuConfig(shown = emptySet()), state, TrayMenuActions())))
         val layouts = labels(TrayMenu.build(TrayMenuConfig(listOf(TraySection.Layouts), setOf(TraySection.Layouts)), TrayMenuState(layouts = listOf("a" to "Work", "b" to "Home")), TrayMenuActions()))
-        assertEquals(listOf("Window layouts>Work,Home", "-", "Quit DyskLink"), layouts)
+        assertEquals(listOf("Window layouts>Work,Home", "-", "Report a problem", "Quit DyskLink"), layouts)
         val two = labels(TrayMenu.build(TrayMenuConfig(listOf(TraySection.SendFile), setOf(TraySection.SendFile)), TrayMenuState(listOf(pixel, tab.copy(isConnected = true))), TrayMenuActions()))
         assertEquals("Send file to>Pixel 8…,Galaxy Tab…", two.first())
     }
@@ -90,5 +91,14 @@ class TrayMenuTest {
         assertEquals(TraySection.entries.size, old.order.size)
         assertEquals(setOf(TraySection.Devices, TraySection.Open), old.shown)
         dir.deleteRecursively()
+    }
+
+    @Test
+    fun reportAProblemRunsItsAction() {
+        var reported = false
+        val item = TrayMenu.build(TrayMenuConfig(shown = emptySet()), state, TrayMenuActions(reportProblem = { reported = true }))
+            .filterIsInstance<TrayEntry.Item>().first { it.label == "Report a problem" }
+        item.onClick()
+        assertTrue(reported)
     }
 }

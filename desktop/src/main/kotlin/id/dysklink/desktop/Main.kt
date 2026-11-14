@@ -272,6 +272,11 @@ fun main(args: Array<String>) {
                 pcCare = { ui.page = id.dysklink.desktop.ui.Page.Tools; ui.toolsView = id.dysklink.desktop.ui.ToolsView.Care; visible = true },
                 launcher = { app.launcher.open() },
                 restoreLayout = { id -> app.windowTidy.act(TidyAction.Restore(id)) },
+                reportProblem = {
+                    model.reportProblem()
+                    // The number to copy is in Settings › About.
+                    if (model.reportFailed.value) { ui.page = id.dysklink.desktop.ui.Page.Settings; visible = true }
+                },
                 quit = quit,
             ),
         )
@@ -394,6 +399,10 @@ private class AppModel(private val app: DesktopApp, override val hasTray: Boolea
     override val host = app.host
     override fun recheckHost() = app.recheckHost()
     override fun openLink(url: String) = Platform.browse(url)
+    override val reportFailed = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override fun reportProblem() {
+        reportFailed.value = !Support.report(app.hub.phones.value.count { it.isPaired && it.isConnected && !it.isComputer })
+    }
     override fun hintAction(id: String) { app.hintAction(id) }
     override val webcam = app.webcam.state.takeIf { app.webcam.available }
     override val island: IslandService get() = app.island

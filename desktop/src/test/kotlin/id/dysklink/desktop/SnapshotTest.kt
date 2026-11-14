@@ -127,7 +127,9 @@ class SnapshotTest {
         extend: SecondDisplayView? = null,
         source: SourceView? = null,
         override val systemName: String = "Windows 11",
+        reportFailed: Boolean = false,
     ) : DeskModel {
+        override val reportFailed = MutableStateFlow(reportFailed)
         override val sourceInput = source?.let { MutableStateFlow(it) }
         override val secondDisplay = extend?.let { MutableStateFlow(it) }
         override val pcCare = care
@@ -478,6 +480,14 @@ class SnapshotTest {
     }
 
     /** Linux without a tray: GNOME is pointed at the AppIndicator extension, other desktops are told closing quits. */
+    @Test
+    fun reportProblemSnapshots() {
+        val path = System.getenv("DYSKLINK_SNAPSHOTS") ?: return
+        val dir = File(path).apply { mkdirs() }
+        shoot(dir, "r1-settings-report-problem", Fake(emptyList()), UiState(page = Page.Settings), height = 2600)
+        shoot(dir, "r2-settings-report-failed-light", Fake(emptyList(), reportFailed = true), UiState(page = Page.Settings), dark = false, height = 2600)
+    }
+
     @Test
     fun trayHintSnapshots() {
         val path = System.getenv("DYSKLINK_SNAPSHOTS") ?: return

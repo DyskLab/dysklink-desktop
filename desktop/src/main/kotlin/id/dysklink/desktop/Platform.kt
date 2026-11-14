@@ -74,14 +74,18 @@ object Platform {
 
     /** Opens a web page in the browser. */
     fun browse(url: String) {
-        runCatching {
-            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
-                java.awt.Desktop.getDesktop().browse(java.net.URI(url))
-            } else if (isWindows) {
-                ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start()
-            } else {
-                ProcessBuilder("xdg-open", url).start()
-            }
-        }
+        tryBrowse(url)
+    }
+
+    /** Opens a web page or link; when Java's way fails, the system's own opener. False when nothing could start. */
+    fun tryBrowse(url: String): Boolean {
+        val viaJava = runCatching {
+            val desktop = java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)
+            if (desktop) java.awt.Desktop.getDesktop().browse(java.net.URI(url))
+            desktop
+        }.getOrDefault(false)
+        if (viaJava) return true
+        val command = if (isWindows) listOf("rundll32", "url.dll,FileProtocolHandler", url) else listOf("xdg-open", url)
+        return runCatching { ProcessBuilder(command).start() }.isSuccess
     }
 }
