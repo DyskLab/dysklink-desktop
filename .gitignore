@@ -1,0 +1,10 @@
+.DS_Store
+.gradle/
+.kotlin/
+.idea/
+build/
+local.properties
+.claude/
+CLAUDE.md
+dist/
+desktop/resources/windows-x64/

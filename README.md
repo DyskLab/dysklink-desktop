@@ -24,9 +24,9 @@ PC, and adds a set of optional tools, each off until you turn it on. It also con
 [DyskLink for Mac](https://github.com/DyskLab/dysklink-mac).
 
 **This is the Windows and Linux app. The phone app is [DyskLink for Android](https://github.com/DyskLab/dysklink-android).**
-You need both to use the phone features. This repository holds releases only; the source is in
-[`desktop/`](https://github.com/DyskLab/dysklink-android/tree/main/desktop) and
-[`core/`](https://github.com/DyskLab/dysklink-android/tree/main/core) of the Android repository.
+You need both to use the phone features. The app's source is in [`desktop/`](desktop); the protocol and connection
+code it shares with the phone app is [`core/`](https://github.com/DyskLab/dysklink-android/tree/main/core) of the
+Android repository, included here as the `android` submodule.
 
 > DyskLink is still young, and this first release hasn't been tested on many PCs yet, so expect rough edges.
 > Please report problems in [Issues](https://github.com/DyskLab/dysklink-desktop/issues).
@@ -140,15 +140,47 @@ shows what to install or allow, with the command to run, only when it applies.
   LRCLIB (off by default), prayer times and weather for the city you choose, and downloading `adb` from Google.
 
 ## Build from source
-The desktop app is built from [DyskLab/dysklink-android](https://github.com/DyskLab/dysklink-android):
+You need JDK 17. The Android SDK isn't needed. Clone with the `android` submodule, which brings the shared `core/`:
 
+```bash
+git clone --recursive https://github.com/DyskLab/dysklink-desktop.git
+cd dysklink-desktop
 ```
-DYSKLINK_DESKTOP_ONLY=1 ./gradlew :desktop:run
-DYSKLINK_DESKTOP_ONLY=1 ./gradlew :desktop:createDistributable
+
+In a clone made without `--recursive`, run `git submodule update --init` first.
+
+```bash
+./gradlew :desktop:run                    # on a Mac, also set DYSKLINK_PORT=47831 next to DyskLink for Mac
+./gradlew :desktop:createDistributable    # desktop/build/compose/binaries/main/app/DyskLink
+./gradlew :desktop:packageMsi             # on Windows; packageExe for the setup .exe
+./gradlew :desktop:packageDeb             # on Linux; packageRpm for the .rpm
 ./gradlew :core:test :desktop:test
 ```
 
-Installers for Windows and Linux are built by the `desktop.yml` workflow there.
+`DYSKLINK_SNAPSHOTS=<folder> ./gradlew :desktop:test --tests '*SnapshotTest*'` renders PNGs of the screens and the
+island.
+
+Each installer can only be made on its own system, so GitHub Actions (`.github/workflows/desktop.yml`) runs the tests
+and then builds them on Windows and Ubuntu runners: `DyskLink-windows-x64.msi`, `DyskLink-windows-x64-setup.exe`,
+`DyskLink-linux-amd64.deb`, `DyskLink-linux-x86_64.rpm`, and `DyskLink-linux-x64.tar.gz`. The Windows build also
+bundles the DyskLink Camera webcam filter (built from [softcam](https://github.com/tshino/softcam)) and the
+[Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver) used for the second display. A
+local build has neither driver. The installers are uploaded as workflow artifacts and published by hand as releases
+here.
+
+Discovery uses jmDNS with a host name of its own, so it works next to the Bonjour that Windows, macOS, and Avahi run.
+
+To build against a `core/` you are changing in a dysklink-android checkout, set `DYSKLINK_ANDROID_DIR` to that
+checkout. To take a newer `core/` for good, move the submodule forward and commit it:
+
+```bash
+git submodule update --remote android
+git add android
+```
+
+The tests that need a running Mac app are skipped here. `scripts/pc-sync-test.sh` in
+[dysklink-mac](https://github.com/DyskLab/dysklink-mac#tests) runs the computer side against the Mac app. All apps
+speak the protocol in [docs/PROTOCOL.md](https://github.com/DyskLab/dysklink-mac/blob/main/docs/PROTOCOL.md).
 
 ## Support
 DyskLink is free and open source under the [MIT License](LICENSE). If it helps you, you can
