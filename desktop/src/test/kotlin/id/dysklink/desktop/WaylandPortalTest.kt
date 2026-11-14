@@ -55,7 +55,19 @@ class WaylandPortalTest {
         return listen.replace(",listen=true", "")
     }
 
-    private fun connect(address: String) = DBusConnectionBuilder.forAddress(address).withShared(false).build().also { connections += it }
+    private fun connect(address: String) = retrying { DBusConnectionBuilder.forAddress(address).withShared(false).build() }.also { connections += it }
+
+    /**
+     * The embedded daemon can report started a moment before it takes connections (seen on CI runners as NotConnected),
+     * so the first connections get a few tries.
+     */
+    private fun <T> retrying(block: () -> T): T {
+        var last: Throwable? = null
+        repeat(20) {
+            try { return block() } catch (e: Exception) { last = e; Thread.sleep(100) }
+        }
+        throw last!!
+    }
 
     /** Records what DyskLink asked; [answer] is the Response code for Start (0 yes, 1 cancelled). */
     private class FakePortal(val conn: DBusConnection, val remoteVersion: Int?, val castVersion: Int = 5) : RemoteDesktopPortal, ScreenCastPortal, Properties {
@@ -152,8 +164,10 @@ class WaylandPortalTest {
 
     private fun startPortal(address: String, remoteVersion: Int? = 2): FakePortal {
         // One thread for calls, as xdg-desktop-portal handles them in order.
-        val conn = DBusConnectionBuilder.forAddress(address).withShared(false).receivingThreadConfig().withMethodCallThreadCount(1)
-            .connectionConfig().build().also { connections += it }
+        val conn = retrying {
+            DBusConnectionBuilder.forAddress(address).withShared(false).receivingThreadConfig().withMethodCallThreadCount(1)
+                .connectionConfig().build()
+        }.also { connections += it }
         conn.requestBusName(PortalBits.DESKTOP)
         return FakePortal(conn, remoteVersion).also { conn.exportObject(PortalBits.PATH, it) }
     }
