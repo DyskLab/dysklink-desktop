@@ -1,21 +1,61 @@
-# DyskLink for Windows and Linux
+<p align="center">
+  <img src="docs/icon.png" width="88" alt="DyskLink">
+</p>
 
-Connect your Android phone and your PC over local Wi-Fi or USB, with no cloud or account.
+<h1 align="center">DyskLink for Windows and Linux</h1>
 
-DyskLink puts the phone's clipboard, files, notifications, screen, and camera on your PC, lets the phone control the
-PC, and adds a set of optional tools to the PC. It pairs with the same 6-digit code as
-[DyskLink for Mac](https://github.com/DyskLab/dysklink-mac), and can share the clipboard, files, and the mouse and
-keyboard with a Mac.
+<p align="center">Connects your PC and Android phone over local Wi-Fi or USB, with no cloud and no account.</p>
 
-Download the installer from [Releases](https://github.com/DyskLab/dysklink-desktop/releases/latest).
+<p align="center">
+  <a href="https://github.com/DyskLab/dysklink-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/DyskLab/dysklink-desktop?include_prereleases" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/DyskLab/dysklink-desktop" alt="MIT License"></a>
+  <a href="https://dysklab.fanny.dev"><img src="https://img.shields.io/badge/part%20of-DyskLab-2DD4A7" alt="Part of DyskLab"></a>
+  <a href="https://buymeacoffee.com/fannydevz"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=000" alt="Buy Me a Coffee"></a>
+</p>
 
-This repository holds releases only. The source lives in
-[DyskLab/dysklink-android](https://github.com/DyskLab/dysklink-android), in `desktop/` and `core/`.
+![The island with music](docs/screenshots/03-island-music.png)
 
-> This is a first release and hasn't been tested on many PCs yet. Please report problems in
-> [Issues](https://github.com/DyskLab/dysklink-desktop/issues).
+| Resting | Something running |
+| --- | --- |
+| <img src="docs/screenshots/01-island-resting.png" alt="The island at rest"> | <img src="docs/screenshots/02-island-live.png" alt="The island with a timer and music"> |
 
-## Features
+DyskLink puts the phone's clipboard, files, notifications, screen and camera on your PC, lets the phone control the
+PC, and adds a set of optional tools, each off until you turn it on. It also connects to Macs running
+[DyskLink for Mac](https://github.com/DyskLab/dysklink-mac).
+
+**This is the Windows and Linux app. The phone app is [DyskLink for Android](https://github.com/DyskLab/dysklink-android).**
+You need both to use the phone features. This repository holds releases only; the source is in
+[`desktop/`](https://github.com/DyskLab/dysklink-android/tree/main/desktop) and
+[`core/`](https://github.com/DyskLab/dysklink-android/tree/main/core) of the Android repository.
+
+> DyskLink is still young, and this first release hasn't been tested on many PCs yet, so expect rough edges.
+> Please report problems in [Issues](https://github.com/DyskLab/dysklink-desktop/issues).
+
+## Download
+Get the installer for your system from [Releases](https://github.com/DyskLab/dysklink-desktop/releases/latest). You need:
+
+- Windows 10 or 11 (64-bit), or a 64-bit Linux desktop. On Linux, Wayland and X11 both work.
+- [DyskLink for Android](https://github.com/DyskLab/dysklink-android/releases/latest) 1.5.0 or later on the phone
+  (Android 8 or later).
+- The phone and the PC on the same network, or connected by USB.
+
+The installers include their own Java runtime, so nothing else needs to be installed first.
+
+| System | Download | How |
+| --- | --- | --- |
+| Windows | `DyskLink-windows-x64.msi` or `DyskLink-windows-x64-setup.exe` | Run it. |
+| Debian, Ubuntu | `DyskLink-linux-amd64.deb` | `sudo apt install ./DyskLink-linux-amd64.deb` |
+| Fedora, openSUSE | `DyskLink-linux-x86_64.rpm` | `sudo dnf install ./DyskLink-linux-x86_64.rpm` (or `sudo zypper install`) |
+| Other Linux | `DyskLink-linux-x64.tar.gz` | Unpack it and run `DyskLink/bin/DyskLink`. |
+
+Then open DyskLink for Android on the same network, choose the PC, and type the 6-digit code the PC shows. After
+that, they connect by themselves.
+
+To update, install the new version over the old one. Pairings and settings are kept. DyskLink looks for a newer
+version once a day, and its Download button opens the installer that suits your system. Nothing is installed by
+itself.
+
+## What it does
 
 **The phone on your PC**
 - Clipboard both ways, text and pictures.
@@ -52,30 +92,6 @@ This repository holds releases only. The source lives in
 - PC care: cleaner, duplicates, uninstall, and startup. Everything removed goes to the Recycle Bin or Trash.
 - Window tidy: put windows in halves, thirds, or quarters, move them between monitors, and save layouts.
 - A tray menu you can arrange, light and dark themes, start at login, and a daily check for new versions.
-
-## Requirements
-- Windows 10 or 11 (64-bit), or a 64-bit Linux desktop. On Linux, Wayland and X11 both work.
-- [DyskLink for Android](https://github.com/DyskLab/dysklink-android/releases/latest) 1.5.0 or later on the phone
-  (Android 8 or later).
-- The phone and the PC on the same network, or connected by USB.
-
-The installers include their own Java runtime, so nothing else needs to be installed first.
-
-## Install
-
-| System | Download | How |
-| --- | --- | --- |
-| Windows | `DyskLink-windows-x64.msi` or `DyskLink-windows-x64-setup.exe` | Run it. |
-| Debian, Ubuntu | `DyskLink-linux-amd64.deb` | `sudo apt install ./DyskLink-linux-amd64.deb` |
-| Fedora, openSUSE | `DyskLink-linux-x86_64.rpm` | `sudo dnf install ./DyskLink-linux-x86_64.rpm` (or `sudo zypper install`) |
-| Other Linux | `DyskLink-linux-x64.tar.gz` | Unpack it and run `DyskLink/bin/DyskLink`. |
-
-Then open DyskLink for Android on the same network, choose the PC, and type the 6-digit code the PC shows. After
-that, they connect by themselves.
-
-To update, install the new version over the old one. Pairings and settings are kept. DyskLink looks for a newer
-version once a day, and its Download button opens the installer that suits your system. Nothing is installed by
-itself.
 
 ## Windows notes
 - **SmartScreen:** the installer isn't signed by a known publisher, so Windows may warn about it. Choose
@@ -123,9 +139,22 @@ shows what to install or allow, with the command to run, only when it applies.
 - DyskLink only reaches the internet to check GitHub for new versions, and for features you turn on: lyrics from
   LRCLIB (off by default), prayer times and weather for the city you choose, and downloading `adb` from Google.
 
-## Other DyskLink apps
-- Phone app: [DyskLab/dysklink-android](https://github.com/DyskLab/dysklink-android). The desktop app's source lives
-  there too, in `desktop/` and `core/`.
-- Mac app: [DyskLab/dysklink-mac](https://github.com/DyskLab/dysklink-mac)
+## Build from source
+The desktop app is built from [DyskLab/dysklink-android](https://github.com/DyskLab/dysklink-android):
 
-[Buy me a coffee](https://buymeacoffee.com/fannydevz) · Part of [DyskLab](https://www.fanny.dev/dysklab)
+```
+DYSKLINK_DESKTOP_ONLY=1 ./gradlew :desktop:run
+DYSKLINK_DESKTOP_ONLY=1 ./gradlew :desktop:createDistributable
+./gradlew :core:test :desktop:test
+```
+
+Installers for Windows and Linux are built by the `desktop.yml` workflow there.
+
+## Support
+DyskLink is free and open source under the [MIT License](LICENSE). If it helps you, you can
+[buy me a coffee](https://buymeacoffee.com/fannydevz).
+
+## Part of DyskLab
+DyskLink is part of [DyskLab](https://dysklab.fanny.dev), alongside
+[DyskFlow](https://github.com/DyskLab/dyskflow), [DyskFiles](https://github.com/DyskLab/dyskfiles), and
+[DyskFocus](https://github.com/DyskLab/dyskfocus).
