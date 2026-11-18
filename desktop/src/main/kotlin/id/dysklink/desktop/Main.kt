@@ -1,5 +1,6 @@
 package id.dysklink.desktop
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -216,6 +217,32 @@ fun main(args: Array<String>) {
             }
         }
 
+        val keyboardLockView = app.keyboardLock?.view?.collectAsState()?.value
+        // While the keyboard is locked: a small window at the bottom of the screen with the time left and Unlock.
+        if (keyboardLockView?.locked == true) {
+            val lockState = remember {
+                val area = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+                val width = 392.dp
+                val height = 132.dp
+                WindowState(
+                    // AWT's bounds are in the same units as dp here, already scaled for the display.
+                    position = WindowPosition((area.x + area.width / 2).dp - width / 2, (area.y + area.height).dp - height - 64.dp),
+                    size = DpSize(width, height),
+                )
+            }
+            Window(
+                onCloseRequest = { app.keyboardLock?.unlock() },
+                state = lockState, title = "Keyboard locked - DyskLink", icon = icon,
+                undecorated = true, transparent = true, alwaysOnTop = true, resizable = false, focusable = false,
+            ) {
+                DyskTheme(dark) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(16.dp)) {
+                        id.dysklink.desktop.ui.KeyboardLockBadge(keyboardLockView, onUnlock = { app.keyboardLock?.unlock() })
+                    }
+                }
+            }
+        }
+
         if (launcherOpen) {
             val launcherState = remember(launcherRound) {
                 WindowState(position = WindowPosition(Alignment.Center), size = DpSize(660.dp, 470.dp))
@@ -260,6 +287,7 @@ fun main(args: Array<String>) {
                 clipboardHistory = clipView.settings.enabled, pcCare = true,
                 launcher = launcherView.enabled,
                 layouts = if (tidyView.enabled && tidyView.supported) Layouts.forMonitors(tidyView.layouts, tidyView.monitorKey).map { it.id to it.name } else emptyList(),
+                keyboardLock = keyboardLockView?.let { if (it.locked) "Unlock keyboard" else "Lock keyboard (${KeyboardLockService.label(it.minutes).lowercase()})" },
             ),
             TrayMenuActions(
                 open = { visible = true },
@@ -272,6 +300,7 @@ fun main(args: Array<String>) {
                 pcCare = { ui.page = id.dysklink.desktop.ui.Page.Tools; ui.toolsView = id.dysklink.desktop.ui.ToolsView.Care; visible = true },
                 launcher = { app.launcher.open() },
                 restoreLayout = { id -> app.windowTidy.act(TidyAction.Restore(id)) },
+                toggleKeyboardLock = { app.keyboardLock?.toggle() },
                 reportProblem = {
                     model.reportProblem()
                     // The number to copy is in Settings › About.
@@ -526,6 +555,9 @@ private class AppModel(private val app: DesktopApp, override val hasTray: Boolea
     override val launcher: LauncherModel = app.launcher
     override val windowTidy = app.windowTidy.view
     override fun tidyAction(action: TidyAction) = app.windowTidy.act(action)
+    override val keyboardLock = app.keyboardLock?.view
+    override fun setKeyboardLocked(on: Boolean) { app.keyboardLock?.let { if (on) it.lock() else it.unlock() } }
+    override fun setKeyboardLockMinutes(minutes: Int) { app.keyboardLock?.setMinutes(minutes) }
     override val trayMenu = app.trayMenu
     override fun setTrayMenu(config: TrayMenuConfig) = app.setTrayMenu(config)
 

@@ -58,7 +58,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ToolsPage(model: DeskModel, clock: () -> Long = System::currentTimeMillis, ui: UiState? = null) {
     val care = model.pcCare
-    val desk = model.launcher != null || model.windowTidy != null
+    val desk = model.launcher != null || model.windowTidy != null || model.keyboardLock != null
     if (desk && ui?.toolsView == ToolsView.Desk) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 24.dp),
@@ -70,6 +70,7 @@ fun ToolsPage(model: DeskModel, clock: () -> Long = System::currentTimeMillis, u
             Spacer(Modifier.height(2.dp))
             LauncherCard(model)
             WindowTidyCard(model)
+            KeyboardLockCard(model)
         }
         return
     }

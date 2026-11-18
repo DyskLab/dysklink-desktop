@@ -211,6 +211,10 @@ interface DeskModel {
     val launcher: id.dysklink.desktop.LauncherModel? get() = null
     val windowTidy: StateFlow<id.dysklink.desktop.WindowTidyView>? get() = null
     fun tidyAction(action: id.dysklink.desktop.TidyAction) {}
+    /** Keyboard lock; null where this PC doesn't have it (Linux, for now). */
+    val keyboardLock: StateFlow<id.dysklink.desktop.KeyboardLockView>? get() = null
+    fun setKeyboardLocked(on: Boolean) {}
+    fun setKeyboardLockMinutes(minutes: Int) {}
     val trayMenu: StateFlow<id.dysklink.desktop.TrayMenuConfig>? get() = null
     fun setTrayMenu(config: id.dysklink.desktop.TrayMenuConfig) {}
 

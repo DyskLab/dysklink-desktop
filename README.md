@@ -91,6 +91,8 @@ itself.
 - Battery health, cycles, power, and history, with apps using significant energy (an estimate from CPU use).
 - PC care: cleaner, duplicates, uninstall, and startup. Everything removed goes to the Recycle Bin or Trash.
 - Window tidy: put windows in halves, thirds, or quarters, move them between monitors, and save layouts.
+- Keyboard lock (Windows): turn off the PC's own keyboard for 1 minute to 1 hour, or until you unlock it. Unlock with the
+  button in its small window, Ctrl+Alt+Shift+U, the timer, or Commands > Unlock the keyboard on a paired phone.
 - A tray menu you can arrange, light and dark themes, start at login, and a daily check for new versions.
 
 ## Windows notes

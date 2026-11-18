@@ -124,6 +124,7 @@ class SnapshotTest {
         override val launcher: LauncherModel? = null,
         tidy: WindowTidyView? = null,
         tray: TrayMenuConfig? = null,
+        lock: KeyboardLockView? = null,
         extend: SecondDisplayView? = null,
         source: SourceView? = null,
         override val systemName: String = "Windows 11",
@@ -135,6 +136,7 @@ class SnapshotTest {
         override val pcCare = care
         override val windowTidy = tidy?.let { MutableStateFlow(it) }
         override val trayMenu = tray?.let { MutableStateFlow(it) }
+        override val keyboardLock = lock?.let { MutableStateFlow(it) }
         override val clipHistory = clip?.let { MutableStateFlow(it) }
         override val battery = battery?.let { MutableStateFlow<BatteryView?>(it) }
         override fun clipImageFile(entry: ClipEntry): File? = entry.imageFile?.let { File(images, it) }
@@ -1030,7 +1032,7 @@ class SnapshotTest {
             layouts = listOf(laptopOnly, work), monitorKey = key, monitors = Layouts.describe(monitors), message = "Saved Work: 3 windows on 2 monitors.",
         ).let { it.copy(hints = HostChecks.windowTidyHints(true, false, null, null, it.hotkey, it.mods)) }
         val desk = UiState(page = Page.Tools).also { it.toolsView = ToolsView.Desk }
-        shoot(dir, "a3-tools-launcher-windows", Fake(all, launcher = launcher, tidy = tidy), desk, height = 1900)
+        shoot(dir, "a3-tools-launcher-windows", Fake(all, launcher = launcher, tidy = tidy, lock = KeyboardLockView(), tray = TrayMenuConfig()), desk, height = 2300)
         shoot(dir, "a3b-light-tools-launcher-windows", Fake(all, launcher = launcher, tidy = tidy), desk, dark = false, height = 1900)
         val off = UiState(page = Page.Tools).also { it.toolsView = ToolsView.Desk }
         shoot(dir, "a4-tools-launcher-off", Fake(all, launcher = FakeLauncher(LauncherView()), tidy = WindowTidyView()), off, height = 800)

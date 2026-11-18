@@ -16,7 +16,8 @@ enum class TraySection(val label: String, val needs: String?, private val block:
     ClipboardHistory("Clipboard history", "Needs Clipboard History in Tools", 3),
     PcCare("PC care", null, 1),
     Launcher("Launcher", "Needs the Launcher in Tools", 1),
-    Layouts("Window layouts", "Needs a saved window layout", 1);
+    Layouts("Window layouts", "Needs a saved window layout", 1),
+    KeyboardLock("Lock keyboard", "Shows on Windows", 1);
 
     /** Sections of one kind sit together; a line goes between kinds. */
     val group: Int get() = block
@@ -71,6 +72,8 @@ data class TrayMenuState(
     val pcCare: Boolean = false,
     val launcher: Boolean = false,
     val layouts: List<Pair<String, String>> = emptyList(),
+    /** "Lock keyboard (5 minutes)" or "Unlock keyboard"; null where there's no keyboard lock. */
+    val keyboardLock: String? = null,
 )
 
 /** What the tray menu's items do. */
@@ -86,6 +89,7 @@ class TrayMenuActions(
     val pcCare: () -> Unit = {},
     val launcher: () -> Unit = {},
     val restoreLayout: (String) -> Unit = {},
+    val toggleKeyboardLock: () -> Unit = {},
     val reportProblem: () -> Unit = {},
     val quit: () -> Unit = {},
 )
@@ -116,6 +120,7 @@ object TrayMenu {
                     TraySection.ClipboardHistory -> if (state.clipboardHistory) add(TrayEntry.Item("Clipboard history", onClick = actions.clipboardHistory))
                     TraySection.PcCare -> if (state.pcCare) add(TrayEntry.Item("PC care…", onClick = actions.pcCare))
                     TraySection.Launcher -> if (state.launcher) add(TrayEntry.Item("Launcher", onClick = actions.launcher))
+                    TraySection.KeyboardLock -> state.keyboardLock?.let { add(TrayEntry.Item(it, onClick = actions.toggleKeyboardLock)) }
                     TraySection.Layouts -> when (state.layouts.size) {
                         0 -> Unit
                         1 -> add(TrayEntry.Item("Restore ${state.layouts[0].second}", onClick = { actions.restoreLayout(state.layouts[0].first) }))

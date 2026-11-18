@@ -149,6 +149,9 @@ class DesktopApp(private val scope: CoroutineScope) {
         copy = ::copyToClipboard,
     )
 
+    /** Keyboard lock on the Tools page and in the tray. Windows only for now; null elsewhere. */
+    val keyboardLock: KeyboardLockService? = if (Platform.isWindows) KeyboardLockService(scope, settings, WindowsKeyBlocker()) else null
+
     private val _trayMenu = MutableStateFlow(TrayMenuConfig.load(settings))
     /** Which parts the tray menu shows, and in what order. */
     val trayMenu: StateFlow<TrayMenuConfig> = _trayMenu.asStateFlow()
@@ -182,6 +185,10 @@ class DesktopApp(private val scope: CoroutineScope) {
         action("tools", "DyskLink Tools", "Focus, water, tasks", "tools todo")
         action("settings", "DyskLink Settings", "DyskLink", "settings pengaturan preferences")
         action("lock", "Lock screen", "This PC", "kunci lock layar")
+        keyboardLock?.let { lock ->
+            if (lock.view.value.locked) action("keyboard", "Unlock the keyboard", "Keyboard lock", "keyboard unlock kunci papan ketik")
+            else action("keyboard", "Lock the keyboard", "For ${KeyboardLockService.label(lock.view.value.minutes).lowercase()}; the mouse still works", "keyboard lock kunci papan ketik bersihkan clean")
+        }
     }
 
     private fun runLauncherAction(id: String) {
@@ -190,6 +197,7 @@ class DesktopApp(private val scope: CoroutineScope) {
             id == "water" -> tools { drink() }
             id == "clipboard" -> clipHistory.requestPicker()
             id == "grid" -> windowTidy.run(WindowTidy.GRID)
+            id == "keyboard" -> keyboardLock?.toggle()
             id == "lock" -> runCatching {
                 if (Platform.isWindows) ProcessBuilder("rundll32.exe", "user32.dll,LockWorkStation").start()
                 else ProcessBuilder("loginctl", "lock-session").start()
@@ -626,8 +634,14 @@ class DesktopApp(private val scope: CoroutineScope) {
                 _popups.tryEmit(Popup("${phoneName(from)} is viewing this screen", "Stop it in DyskLink, or turn off \"Let phones see this screen\"."))
             }
 
-            override fun commands(from: String): List<SavedCommand>? = if (from in _commandPhones.value) commandStore.commands.value else null
-            override fun runCommand(command: SavedCommand): CommandResult = PcShell.run(command)
+            // "Unlock the keyboard" goes to every paired phone while it's locked, even with its own commands off.
+            override fun commands(from: String): List<SavedCommand>? {
+                val own = if (from in _commandPhones.value) commandStore.commands.value else null
+                val lock = keyboardLock?.commands().orEmpty()
+                return if (own == null && lock.isEmpty()) null else own.orEmpty() + lock
+            }
+            override fun runCommand(command: SavedCommand): CommandResult =
+                keyboardLock?.runCommand(command.id)?.let { CommandResult(command.id, 0, it) } ?: PcShell.run(command)
             override fun terminalAllowed(from: String): Boolean = from in _terminalPhones.value
             override val pty: PtyFactory get() = PcShell.pty
             override fun terminalOpened(from: String) {
@@ -722,6 +736,7 @@ class DesktopApp(private val scope: CoroutineScope) {
         if (island.isOn) island.start() else island.recheckHints()
         windowTidy.start()
         launcher.start()
+        keyboardLock?.onChange = { hub.commandsChanged() }
         battery.start()
         energy.setTray(TraySection.EnergyApp in _trayMenu.value.shown)
         energy.start()
@@ -753,6 +768,7 @@ class DesktopApp(private val scope: CoroutineScope) {
         island.stop()
         windowTidy.stop()
         launcher.stop()
+        keyboardLock?.stop()
         battery.stop()
         energy.stop()
         instance.close()
