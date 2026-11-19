@@ -11,7 +11,7 @@ plugins {
 
 kotlin { jvmToolchain(17) }
 
-val appVersion = "1.0.0"
+val appVersion = "1.1.0"
 
 dependencies {
     implementation(project(":core"))
