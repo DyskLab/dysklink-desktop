@@ -45,8 +45,9 @@ compose.desktop {
             description = "Your Android phone and your PC, working together"
             vendor = "DyskLab"
             copyright = "DyskLab"
+            // java.net.http: the update check (Updater) and Obs use HttpClient; without it the app dies at start.
             // jdk.security.auth: dbus-java reads the user id from it to log in to the session bus (the Linux tray).
-            modules("java.instrument", "java.naming", "java.sql", "jdk.unsupported", "jdk.crypto.ec", "jdk.security.auth")
+            modules("java.instrument", "java.naming", "java.net.http", "java.sql", "jdk.unsupported", "jdk.crypto.ec", "jdk.security.auth")
             // Files beside the app, found through compose.application.resources.dir: CI puts softcam.dll (DyskLink
             // Camera, the webcam on Windows) in resources/windows-x64. Nothing there in a local build.
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
