@@ -55,8 +55,17 @@ import kotlinx.coroutines.withContext
 private const val MIN_WIDTH = 860
 private const val MIN_HEIGHT = 600
 
-@OptIn(FlowPreview::class)
 fun main(args: Array<String>) {
+    try {
+        startApp(args)
+    } catch (error: Throwable) {
+        StartupCrash.report(error)
+        kotlin.system.exitProcess(1)
+    }
+}
+
+@OptIn(FlowPreview::class)
+private fun startApp(args: Array<String>) {
     // `dysklink --clipboard`, `--launcher` or `--window left-half`, from a desktop shortcut: the running DyskLink does
     // it, and this start ends.
     val command = SingleInstance.commandFor(args)
