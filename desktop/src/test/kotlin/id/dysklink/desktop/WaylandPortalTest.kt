@@ -63,8 +63,9 @@ class WaylandPortalTest {
      */
     private fun <T> retrying(block: () -> T): T {
         var last: Throwable? = null
-        repeat(20) {
-            try { return block() } catch (e: Exception) { last = e; Thread.sleep(100) }
+        // Up to 10 seconds: a busy CI runner has needed more than 2.
+        repeat(50) {
+            try { return block() } catch (e: Exception) { last = e; Thread.sleep(200) }
         }
         throw last!!
     }
