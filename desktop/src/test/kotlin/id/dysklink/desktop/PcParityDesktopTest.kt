@@ -53,6 +53,21 @@ class PcParityDesktopTest {
         }
     }
 
+    @Test
+    fun pcShortcutsArePressedAsTheyAre() {
+        assertEquals("ctrl+shift+escape", MacShortcuts.forPc("pc:ctrl+shift+escape", windows = true))
+        assertEquals("ctrl+q", MacShortcuts.forPc("pc:ctrl+q", windows = true), "no Mac mapping (Cmd+Q would be Alt+F4)")
+        assertEquals("ctrl+win+left", MacShortcuts.forPc("pc:ctrl+win+left", windows = false))
+        assertNull(MacShortcuts.forPc("pc:cmd+c", windows = true))
+        assertNull(MacShortcuts.forPc("pc:", windows = true))
+        // Every ready-made PC shortcut and key on the phone can be pressed here.
+        val keys = id.phonelink.android.core.Deck.pcSpecialKeys.map { "pc:${it.first}" }
+        for ((name, shortcut) in id.phonelink.android.core.Deck.pcShortcuts + keys.map { it to it }) {
+            val pc = assertNotNull(MacShortcuts.forPc(shortcut, windows = true), name)
+            assertNotNull(Keys.parse(pc), "$name: $pc")
+        }
+    }
+
     // Scans
 
     @Test

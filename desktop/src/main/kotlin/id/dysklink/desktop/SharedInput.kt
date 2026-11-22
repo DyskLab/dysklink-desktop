@@ -432,6 +432,16 @@ class RobotInjector(private val robot: Robot) : InputInjector {
 
     override fun moveTo(x: Int, y: Int) = robot.mouseMove(x, y)
 
+    /**
+     * On Windows, relative moves (touchpad, air pointer, a Mac's mouse) go through GetCursorPos and SetCursorPos:
+     * Robot.mouseMove turns pointer acceleration off and on around every move, which makes a stream of small moves
+     * stutter. Robot is the fallback.
+     */
+    override fun moveBy(dx: Int, dy: Int) {
+        if (Platform.isWindows && WinCursor.moveBy(dx, dy)) return
+        pointer?.let { moveTo(it.x + dx, it.y + dy) }
+    }
+
     override fun button(button: Int, down: Boolean) {
         val mask = when (button) {
             0 -> AwtInput.BUTTON1_DOWN_MASK
@@ -451,6 +461,46 @@ class RobotInjector(private val robot: Robot) : InputInjector {
     override fun key(vk: Int, down: Boolean) {
         // A key this keyboard layout doesn't have is skipped rather than ending the whole event.
         runCatching { if (down) robot.keyPress(vk) else robot.keyRelease(vk) }
+    }
+}
+
+/** The Windows pointer in physical pixels; moves given in logical pixels are scaled by the display scaling. */
+internal object WinCursor {
+    @Suppress("FunctionName")
+    private interface User32 : Library {
+        fun GetCursorPos(point: IntArray): Boolean
+        fun SetCursorPos(x: Int, y: Int): Boolean
+    }
+
+    private val user32: User32? by lazy {
+        runCatching { Native.load("user32", User32::class.java) }.onFailure { CoreLog.w("DyskLink", "No SetCursorPos", it) }.getOrNull()
+    }
+    @Volatile private var failed = false
+    private var restX = 0.0
+    private var restY = 0.0
+
+    @Synchronized
+    fun moveBy(dx: Int, dy: Int): Boolean {
+        val lib = user32 ?: return false
+        if (failed) return false
+        val point = IntArray(2)
+        if (!lib.GetCursorPos(point)) return false
+        val scale = runCatching {
+            GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice.defaultConfiguration.defaultTransform.scaleX
+        }.getOrDefault(1.0).coerceIn(1.0, 4.0)
+        restX += dx * scale
+        restY += dy * scale
+        val stepX = restX.toInt()
+        val stepY = restY.toInt()
+        restX -= stepX
+        restY -= stepY
+        if (stepX == 0 && stepY == 0) return true
+        if (!lib.SetCursorPos(point[0] + stepX, point[1] + stepY)) {
+            failed = true
+            CoreLog.w("DyskLink", "SetCursorPos failed, the pointer moves through Robot")
+            return false
+        }
+        return true
     }
 }
 

@@ -81,22 +81,60 @@ object PcShell {
         return listOf(shell, "-l")
     }
 
-    /** Shells on a pseudo terminal through pty4j: ConPTY on Windows, a Unix pty elsewhere. */
+    /**
+     * Shells on a pseudo terminal through pty4j: ConPTY on Windows, a Unix pty elsewhere. On Windows, when ConPTY
+     * can't start (Windows 10 before 1809, or its helper blocked), winpty is tried, then a plain shell on pipes, which
+     * runs commands but has no colors or full-screen programs.
+     */
     val pty: PtyFactory = PtyFactory { cols, rows ->
         val environment = HashMap(System.getenv())
         environment["TERM"] = "xterm-256color"
         environment["COLORTERM"] = "truecolor"
         environment["TERM_PROGRAM"] = "DyskLink"
         environment.putIfAbsent("LANG", "en_US.UTF-8")
-        val process = PtyProcessBuilder(terminalShell().toTypedArray())
-            .setEnvironment(environment)
-            .setDirectory(home.path)
-            .setInitialColumns(cols)
-            .setInitialRows(rows)
-            .setConsole(false)
-            .setUseWinConPty(true)
-            .start()
-        Pty4jSession(process)
+        fun start(conPty: Boolean): PtySession = Pty4jSession(
+            PtyProcessBuilder(terminalShell().toTypedArray())
+                .setEnvironment(environment)
+                .setDirectory(home.path)
+                .setInitialColumns(cols)
+                .setInitialRows(rows)
+                .setConsole(false)
+                .setUseWinConPty(conPty)
+                .start(),
+        )
+        if (!Platform.isWindows) return@PtyFactory start(conPty = false)
+        try {
+            start(conPty = true)
+        } catch (conPty: Throwable) {
+            CoreLog.w("DyskLink", "ConPTY couldn't start, trying winpty", conPty)
+            try {
+                start(conPty = false)
+            } catch (winpty: Throwable) {
+                CoreLog.w("DyskLink", "winpty couldn't start, using a plain shell", winpty)
+                PipeSession(ProcessBuilder(terminalShell()).directory(home).redirectErrorStream(true).start())
+            }
+        }
+    }
+
+    /** A shell on pipes, for when no pseudo terminal starts: commands run, but nothing full-screen. */
+    private class PipeSession(private val process: Process) : PtySession {
+        override val output: InputStream = process.inputStream
+        private val input = process.outputStream
+
+        override fun write(bytes: ByteArray) {
+            // A terminal sends Enter as CR; a shell on a pipe reads lines.
+            input.write(String(bytes, Charsets.UTF_8).replace("\r", "\r\n").toByteArray(Charsets.UTF_8))
+            input.flush()
+        }
+
+        override fun resize(cols: Int, rows: Int) {}
+        override fun hangUp() { process.destroy() }
+        override fun kill() {
+            runCatching { process.descendants().forEach { it.destroyForcibly() } }
+            process.destroyForcibly()
+        }
+        override val isAlive: Boolean get() = process.isAlive
+        override fun waitFor(): Int = process.waitFor()
     }
 
     private class Pty4jSession(private val process: PtyProcess) : PtySession {

@@ -151,7 +151,10 @@ class IslandWindow(private val service: IslandService) {
         resize?.cancel()
         sizedFor = IslandGeometry.union(sizedFor, shape)
         place(sizedFor)
-        applyInput(shape)
+        // On Windows the region (SetWindowRgn) also clips what's drawn, so it stays as big as both shapes until the
+        // animation is done; set to the new shape at once, a closing island would snap instead of shrinking. On Linux
+        // it's only where clicks land.
+        applyInput(if (Platform.isWindows) sizedFor else shape)
         resize = scope.launch {
             delay(if (reducedMotion) 0 else 380)
             sizedFor = target

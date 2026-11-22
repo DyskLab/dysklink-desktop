@@ -228,9 +228,18 @@ object Keys {
  */
 object MacShortcuts {
     private val order = listOf("fn", "ctrl", "opt", "shift", "cmd")
+    private const val PC = "pc:"
+    private val PC_MODIFIERS = setOf("ctrl", "alt", "shift", "win")
 
     /** A Mac shortcut as this PC's, or null when it means nothing here. */
     fun forPc(shortcut: String, windows: Boolean): String? {
+        // A PC shortcut from the deck (`pc-keys`): pressed as it is, with Ctrl, Alt, Shift, and Win.
+        if (shortcut.startsWith(PC)) {
+            val parts = shortcut.removePrefix(PC).lowercase().replace(" ", "").split('+').filter { it.isNotEmpty() }
+            if (parts.isEmpty()) return null
+            if (parts.dropLast(1).any { it !in PC_MODIFIERS }) return null
+            return parts.joinToString("+")
+        }
         val parts = shortcut.lowercase().replace(" ", "").split('+').filter { it.isNotEmpty() }
         if (parts.isEmpty()) return null
         val key = parts.last()
@@ -308,9 +317,28 @@ class MediaKeys {
             .onFailure { CoreLog.w("DyskLink", "Media key $action failed", it) }
     }
 
-    /** Windows has no media keys in Java, but WScript.Shell can send their virtual key codes. One PowerShell stays open. */
+    @Suppress("FunctionName")
+    private interface User32 : com.sun.jna.Library { fun SendInput(count: Int, inputs: com.sun.jna.Pointer, size: Int): Int }
+
+    private val user32: User32? by lazy {
+        runCatching { com.sun.jna.Native.load("user32", User32::class.java) }
+            .onFailure { CoreLog.w("DyskLink", "No SendInput for media keys", it) }.getOrNull()
+    }
+
+    /**
+     * Windows: the media and volume virtual keys through SendInput, as extended keys, which players and the system
+     * volume take whatever the keyboard layout. WScript.Shell in one PowerShell is the fallback: it sends characters,
+     * so on some layouts it types instead.
+     */
     private fun windows(action: String) {
         val code = mapOf("play_pause" to 179, "next" to 176, "previous" to 177, "volume_up" to 175, "volume_down" to 174, "mute" to 173)[action] ?: return
+        user32?.let { lib ->
+            val size = WinInput.inputSize(com.sun.jna.Native.POINTER_SIZE)
+            val bytes = WinInput.keyTap(code, extended = true, pointerSize = com.sun.jna.Native.POINTER_SIZE)
+            val memory = com.sun.jna.Memory(bytes.size.toLong()).apply { write(0, bytes, 0, bytes.size) }
+            if (lib.SendInput(2, memory, size) == 2) return
+            CoreLog.w("DyskLink", "SendInput refused media key $action, trying PowerShell")
+        }
         synchronized(this) {
             if (shell?.isAlive != true) {
                 shell = ProcessBuilder("powershell", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "-")

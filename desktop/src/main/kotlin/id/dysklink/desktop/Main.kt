@@ -152,12 +152,20 @@ private fun startApp(args: Array<String>) {
         val screens by app.hub.screens.collectAsState()
         val cameras by app.hub.cameras.collectAsState()
         LaunchedEffect(screens.keys) { ui.screenWindow?.let { if (it !in screens) ui.screenWindow = null } }
+        // As on the Mac, the phone's screen opens in its own window once the phone starts sharing it. "Show here" moves
+        // it back into the main window.
+        var liveScreens by remember { mutableStateOf(emptySet<String>()) }
+        LaunchedEffect(screens) {
+            val live = screens.filterValues { !it.waiting && it.error == null }.keys
+            (live - liveScreens).firstOrNull()?.let { if (ui.screenWindow == null) ui.screenWindow = it }
+            liveScreens = live
+        }
         LaunchedEffect(cameras.keys) { ui.cameraWindow?.let { if (it !in cameras) ui.cameraWindow = null } }
         // The webcam turns and mirrors as the camera window does.
         LaunchedEffect(ui.camera.rotation, ui.camera.mirror) { model.setWebcamView(ui.camera.rotation, ui.camera.mirror) }
         ui.screenWindow?.let { id ->
             val name = phones.firstOrNull { it.id == id }?.name ?: "Phone"
-            val screenState = rememberWindowState(size = DpSize(460.dp, 900.dp))
+            val screenState = rememberWindowState(size = fitted(460, 900))
             // Game keys add their panel beside the picture; the window grows by its width, so the picture keeps its size.
             val gameOn = ui.gameKeys(id, model).enabled
             var widened by remember(id) { mutableStateOf(false) }
@@ -181,7 +189,7 @@ private fun startApp(args: Array<String>) {
             Window(
                 onCloseRequest = { ui.cameraWindow = null; model.stopCamera(id) },
                 title = cameraWindowTitle(name), icon = icon, alwaysOnTop = ui.camera.onTop,
-                state = rememberWindowState(size = DpSize(960.dp, 640.dp)),
+                state = rememberWindowState(size = fitted(960, 640)),
             ) {
                 DyskTheme(dark) { CameraWindowContent(model, ui, id, name) }
             }
@@ -337,7 +345,8 @@ private fun startApp(args: Array<String>) {
             state = windowState,
         ) {
             LaunchedEffect(Unit) {
-                window.minimumSize = Dimension(MIN_WIDTH, MIN_HEIGHT)
+                val area = usableArea()
+                window.minimumSize = Dimension(minOf(MIN_WIDTH, area.width), minOf(MIN_HEIGHT, area.height))
                 // A tool installed or a setting changed while the window was away: the hints check again.
                 window.addWindowFocusListener(object : java.awt.event.WindowAdapter() {
                     override fun windowGainedFocus(e: java.awt.event.WindowEvent?) {
@@ -374,19 +383,47 @@ private fun pickFiles(owner: Frame?, deviceName: String?): List<File> {
     return dialog.files.orEmpty().toList()
 }
 
-/** Where the window was last time, if that place is still on a screen. */
+/**
+ * The part of the main screen windows can use, without the taskbar, in the units windows are sized in. With display
+ * scaling at 125% or 150% a laptop screen has much less room than its pixels say (1920x1080 at 150% is 1280x720).
+ */
+private fun usableArea(): Rectangle = runCatching { GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds }
+    .getOrNull()?.takeIf { it.width > 0 && it.height > 0 } ?: Rectangle(0, 0, 1280, 720)
+
+/** [width] x [height], made smaller to fit on the screen with a margin. */
+private fun fitted(width: Int, height: Int): DpSize {
+    val area = usableArea()
+    return DpSize(minOf(width, area.width - 40).coerceAtLeast(320).dp, minOf(height, area.height - 40).coerceAtLeast(240).dp)
+}
+
+/** Where the window was last time, if the whole window still fits there on a screen. */
 private fun savedPosition(settings: Settings): WindowPosition {
     val x = settings.int("window.x") ?: return WindowPosition(Alignment.Center)
     val y = settings.int("window.y") ?: return WindowPosition(Alignment.Center)
-    val onScreen = runCatching {
-        GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices.any { it.defaultConfiguration.bounds.intersects(Rectangle(x, y, 200, 100)) }
+    val size = savedSize(settings)
+    val window = Rectangle(x, y, size.width.value.toInt(), size.height.value.toInt())
+    val fits = runCatching {
+        val environment = GraphicsEnvironment.getLocalGraphicsEnvironment()
+        environment.screenDevices.any { device ->
+            val config = device.defaultConfiguration
+            val insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(config)
+            val bounds = config.bounds
+            Rectangle(bounds.x + insets.left, bounds.y + insets.top, bounds.width - insets.left - insets.right, bounds.height - insets.top - insets.bottom)
+                .contains(window)
+        }
     }.getOrDefault(false)
-    return if (onScreen) WindowPosition(x.dp, y.dp) else WindowPosition(Alignment.Center)
+    return if (fits) WindowPosition(x.dp, y.dp) else WindowPosition(Alignment.Center)
 }
 
+/** The size from last time, or 980x660 as on the Mac, never bigger than 92% of the usable screen. */
 private fun savedSize(settings: Settings): DpSize {
-    val width = settings.int("window.width")?.coerceAtLeast(MIN_WIDTH) ?: 1040
-    val height = settings.int("window.height")?.coerceAtLeast(MIN_HEIGHT) ?: 700
+    val area = usableArea()
+    val minWidth = minOf(MIN_WIDTH, area.width)
+    val minHeight = minOf(MIN_HEIGHT, area.height)
+    val maxWidth = maxOf(minWidth, (area.width * 0.92).toInt())
+    val maxHeight = maxOf(minHeight, (area.height * 0.92).toInt())
+    val width = (settings.int("window.width") ?: 980).coerceIn(minWidth, maxWidth)
+    val height = (settings.int("window.height") ?: 660).coerceIn(minHeight, maxHeight)
     return DpSize(width.dp, height.dp)
 }
 

@@ -49,15 +49,37 @@ object Softcam {
         return "\$p = Start-Process regsvr32 -ArgumentList $args -Verb RunAs -Wait -PassThru; exit \$p.ExitCode"
     }
 
-    /** Registers (or with [remove], unregisters) [dll]. False when it failed or the user said no to Windows. */
+    /** What went wrong the last time [register] failed, for the popup. */
+    @Volatile var lastFailure: String? = null
+        private set
+
+    /**
+     * Registers (or with [remove], unregisters) [dll]. False when it failed or the user said no to Windows. The line
+     * goes as -EncodedCommand: with -Command, Java's command line loses the double quotes around a path with a space
+     * (a user name such as "Jane Doe"), and regsvr32 then gets two file names.
+     */
     fun register(dll: File, remove: Boolean): Boolean = runCatching {
-        val process = ProcessBuilder("powershell", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", elevatedRegsvr32(dll.absolutePath, remove))
-            .redirectErrorStream(true).start()
+        val process = ProcessBuilder(
+            "powershell", "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand",
+            VddInstall.encoded(elevatedRegsvr32(dll.absolutePath, remove)),
+        ).redirectErrorStream(true).start()
         val out = process.inputStream.bufferedReader().readText()
         val done = process.waitFor(120, TimeUnit.SECONDS)
-        if (!done || process.exitValue() != 0) CoreLog.w("DyskLink", "regsvr32 ${if (remove) "/u " else ""}failed: $out")
-        done && process.exitValue() == 0
-    }.getOrDefault(false)
+        val code = if (done) process.exitValue() else null
+        lastFailure = when (code) {
+            0 -> null
+            null -> "It took too long."
+            3 -> "Windows couldn't load softcam.dll (regsvr32 code 3)."
+            4, 5 -> "Windows refused to register the camera (regsvr32 code $code)."
+            else -> if (out.contains("canceled", ignoreCase = true) || out.contains("abgebrochen")) "Windows' question was answered No." else "regsvr32 ended with code $code."
+        }
+        if (code != 0) CoreLog.w("DyskLink", "regsvr32 ${if (remove) "/u " else ""}failed ($code): $out")
+        code == 0
+    }.getOrElse {
+        lastFailure = it.message
+        CoreLog.w("DyskLink", "regsvr32 couldn't run", it)
+        false
+    }
 }
 
 /** Sends frames to softcam: BGR24, bottom row first (a DIB with a positive height, as softcam describes it). */

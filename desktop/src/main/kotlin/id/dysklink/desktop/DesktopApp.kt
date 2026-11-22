@@ -493,7 +493,18 @@ class DesktopApp(private val scope: CoroutineScope) {
 
     /** A hint's button: installing or removing the Windows camera driver. */
     fun hintAction(id: String) = scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-        if (id == HostChecks.ACTION_WEBCAM_INSTALL || id == HostChecks.ACTION_WEBCAM_REMOVE) webcam.action(id)
+        if (id == HostChecks.ACTION_WEBCAM_INSTALL || id == HostChecks.ACTION_WEBCAM_REMOVE) {
+            val remove = id == HostChecks.ACTION_WEBCAM_REMOVE
+            if (!webcam.action(id) && Platform.isWindows) {
+                _popups.tryEmit(
+                    Popup(
+                        if (remove) "DyskLink Camera wasn't removed" else "DyskLink Camera wasn't installed",
+                        (Softcam.lastFailure ?: "softcam.dll isn't in this copy of DyskLink.") +
+                            " Installing needs an administrator account: press Yes when Windows asks. See dysklink.log in DyskLink's data folder.",
+                    ),
+                )
+            }
+        }
         if (id == HostChecks.ACTION_PORTAL_INPUT) wayland?.retry()
         if (id == HostChecks.ACTION_PORTAL_SCREEN) { waylandScreen.retry(); recheckHost() }
         if (id == HostChecks.ACTION_CLIPBOARD_HOTKEY) clipHistory.act(ClipAction.RetryHotkey)
@@ -707,7 +718,13 @@ class DesktopApp(private val scope: CoroutineScope) {
 
     fun start() {
         CoreLog.sink = { level, tag, message, error ->
-            val line = "${LocalDateTime.now()} $level $tag $message${error?.let { " ($it)" } ?: ""}"
+            // The first frames of a stack trace too, so a report from a PC says where it failed.
+            val trace = error?.let { e ->
+                val frames = e.stackTrace.take(8).joinToString("") { "\n    at $it" }
+                val cause = e.cause?.let { "\n  caused by $it" + it.stackTrace.take(4).joinToString("") { f -> "\n    at $f" } }.orEmpty()
+                " ($e)$frames$cause"
+            }.orEmpty()
+            val line = "${LocalDateTime.now()} $level $tag $message$trace"
             println(line)
             runCatching {
                 if (logFile.length() > 1_000_000) logFile.writeText("")

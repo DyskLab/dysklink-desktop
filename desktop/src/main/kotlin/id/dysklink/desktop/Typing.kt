@@ -230,6 +230,23 @@ object WinInput {
     const val KEYEVENTF_KEYUP = 0x0002
     const val KEYEVENTF_UNICODE = 0x0004
 
+    const val KEYEVENTF_EXTENDEDKEY = 0x0001
+
+    /** A virtual key pressed and let go, such as VK_MEDIA_PLAY_PAUSE; media and volume keys are extended keys. */
+    fun keyTap(vk: Int, extended: Boolean, pointerSize: Int): ByteArray {
+        val size = inputSize(pointerSize)
+        val union = pointerSize
+        val buffer = ByteBuffer.allocate(2 * size).order(ByteOrder.LITTLE_ENDIAN)
+        for ((index, up) in listOf(false, true).withIndex()) {
+            val at = index * size
+            buffer.putInt(at, INPUT_KEYBOARD)
+            buffer.putShort(at + union, vk.toShort())
+            buffer.putShort(at + union + 2, 0)
+            buffer.putInt(at + union + 4, (if (extended) KEYEVENTF_EXTENDEDKEY else 0) or (if (up) KEYEVENTF_KEYUP else 0))
+        }
+        return buffer.array()
+    }
+
     /** sizeof(INPUT): the union is pointer-aligned and as big as MOUSEINPUT. */
     fun inputSize(pointerSize: Int) = if (pointerSize == 8) 40 else 28
 
