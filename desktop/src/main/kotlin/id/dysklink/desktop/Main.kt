@@ -180,6 +180,7 @@ private fun startApp(args: Array<String>) {
                 title = "$name screen - DyskLink", icon = icon,
                 state = screenState,
             ) {
+                LaunchedEffect(dark) { WinTitleBar.apply(window, dark) }
                 DyskTheme(dark) { ScreenWindowContent(model, ui, id) }
             }
         }
@@ -191,6 +192,7 @@ private fun startApp(args: Array<String>) {
                 title = cameraWindowTitle(name), icon = icon, alwaysOnTop = ui.camera.onTop,
                 state = rememberWindowState(size = fitted(960, 640)),
             ) {
+                LaunchedEffect(dark) { WinTitleBar.apply(window, dark) }
                 DyskTheme(dark) { CameraWindowContent(model, ui, id, name) }
             }
         }
@@ -356,6 +358,8 @@ private fun startApp(args: Array<String>) {
                     }
                 })
             }
+            // Windows: a dark title bar with the dark theme.
+            LaunchedEffect(dark) { WinTitleBar.apply(window, dark) }
             // A click on the StatusNotifierItem icon also brings an open window to the front.
             LaunchedEffect(raise) { if (raise > 0) { window.toFront(); window.requestFocus() } }
             DyskTheme(dark) {
@@ -611,4 +615,6 @@ private class AppModel(private val app: DesktopApp, override val hasTray: Boolea
     override fun checkForUpdates() = app.updater.checkNow()
     override fun downloadUpdate() = app.updater.download()
     override fun skipUpdate() = app.updater.skip()
+    override val updatesAuto = app.updater.auto
+    override fun setUpdatesAuto(on: Boolean) = app.updater.setAuto(on)
 }

@@ -96,7 +96,7 @@ fun MainScreen(model: DeskModel, ui: UiState, pickFiles: () -> List<File>, radar
                     when {
                         ui.page == Page.Tools -> ToolsPage(model, ui = ui)
                         ui.page == Page.History -> HistoryPage(model)
-                        ui.page == Page.Settings -> SettingsPage(model)
+                        ui.page == Page.Settings -> SettingsPage(model, ui)
                         selected != null && selected.isPaired -> DevicePage(model, ui, selected, pickFiles)
                         selected != null -> NewDeviceState(model, selected)
                         else -> EmptyState(model, phones, radarProgress, firewallAfterMs)

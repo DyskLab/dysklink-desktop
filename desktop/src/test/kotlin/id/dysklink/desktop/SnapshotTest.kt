@@ -8,6 +8,7 @@ import id.dysklink.desktop.ui.MainScreen
 import id.dysklink.desktop.ui.Page
 import id.dysklink.desktop.ui.ThemeMode
 import id.dysklink.desktop.ui.UiState
+import id.dysklink.desktop.ui.SettingsTab
 import id.dysklink.desktop.ui.ToolsView
 import id.dysklink.desktop.ui.CameraWindowContent
 import id.dysklink.desktop.ui.ScreenWindowContent
@@ -378,7 +379,7 @@ class SnapshotTest {
         val win = HostChecks.windowsWebcam(dll, null)
         shoot(dir, "44-webcam-windows-install", Fake(all, host = HostHints(obs = ObsCapture.Windows), webcam = WebcamState(on = true, status = WebcamStatus.NeedsSetup, label = "DyskLink Camera", hints = win.hints)), ui(), height = 820)
         val installed = HostChecks.windowsWebcam(dll, dll)
-        shoot(dir, "45-settings-webcam-remove", Fake(all, webcam = WebcamState(settings = installed.settings)), UiState(page = Page.Settings), height = 1400)
+        shoot(dir, "45-settings-webcam-remove", Fake(all, webcam = WebcamState(settings = installed.settings)), settingsAt(SettingsTab.Phones), height = 1400)
         val window = Fake(all, cameras = mapOf("p1" to camera), webcam = WebcamState(on = true, status = WebcamStatus.Active, device = "/dev/video10", live = true))
         shootContent(dir, "46-camera-window-webcam", 960, 640) { CameraWindowContent(window, UiState(), "p1", "Pixel 8") }
         shoot(dir, "47-light-webcam-setup", Fake(all, host = linuxObs, webcam = WebcamState(on = true, status = WebcamStatus.NeedsSetup, hints = setup.hints)), ui(), dark = false, height = 1150)
@@ -455,7 +456,7 @@ class SnapshotTest {
         shoot(dir, "22-commands-off", Fake(all, commands = commands), UiState(tab = "commands"))
         shoot(dir, "22b-commands-on-terminal-open", Fake(all, commands = commands, commandPhones = setOf("p1"), terminalPhones = setOf("p1"), terminals = mapOf("p1" to 2)), UiState(tab = "commands"), height = 900)
         shoot(dir, "22c-light-commands-empty", Fake(all, commandPhones = setOf("p1")), UiState(tab = "commands"), dark = false)
-        shoot(dir, "23-settings-commands", Fake(all, commands = commands, computers = true, remote = true, soundOut = true), UiState(page = Page.Settings), height = 1500)
+        shoot(dir, "23-settings-commands", Fake(all, commands = commands, computers = true, remote = true, soundOut = true), settingsAt(SettingsTab.Phones), height = 1500)
         shoot(dir, "24-mac-using-this-pc", Fake(all, computers = true, remote = true, usedBy = "m1"), UiState(selectedId = "m1"))
         assertTrue(File(dir, "22b-commands-on-terminal-open.png").length() > 0)
     }
@@ -466,7 +467,7 @@ class SnapshotTest {
         val path = System.getenv("DYSKLINK_SNAPSHOTS") ?: return
         val dir = File(path).apply { mkdirs() }
         val ready = mac.copy(info = DeviceInfo(remoteControl = true))
-        val settings = UiState(page = Page.Settings)
+        val settings = settingsAt(SettingsTab.Phones)
         val on = SourceView(supported = true, on = true, mac = "m1", edge = ScreenEdge.RIGHT)
         shoot(dir, "src1-off", Fake(listOf(phone, ready), computers = true, source = SourceView(supported = true)), settings, height = 2300)
         shoot(dir, "src2-windows-ready", Fake(listOf(phone, ready), computers = true, source = on), settings, height = 2500)
@@ -509,10 +510,10 @@ class SnapshotTest {
         val dir = File(path).apply { mkdirs() }
         val all = listOf(phone, tablet, mac)
         val wayland = HostChecks.hints(HostEnv(windows = false, linux = true, env = mapOf("XDG_SESSION_TYPE" to "wayland", "XDG_CURRENT_DESKTOP" to "ubuntu:GNOME")::get, onPath = { true }))
-        shoot(dir, "25-settings-screen-off", Fake(all), UiState(page = Page.Settings), height = 1400)
-        shoot(dir, "25b-settings-screen-on-wayland", Fake(all, screenOut = true, host = wayland), UiState(page = Page.Settings), height = 1400)
+        shoot(dir, "25-settings-screen-off", Fake(all), settingsAt(SettingsTab.Phones), height = 1400)
+        shoot(dir, "25b-settings-screen-on-wayland", Fake(all, screenOut = true, host = wayland), settingsAt(SettingsTab.Phones), height = 1400)
         shoot(dir, "26-screen-viewed-overview", Fake(all, screenOut = true, screenTo = "p1"))
-        shoot(dir, "26b-screen-viewed-settings", Fake(all, screenOut = true, screenTo = "p1"), UiState(page = Page.Settings))
+        shoot(dir, "26b-screen-viewed-settings", Fake(all, screenOut = true, screenTo = "p1"), settingsAt(SettingsTab.Phones))
         shoot(dir, "26c-light-screen-viewed", Fake(all, screenOut = true, screenTo = "p2"), dark = false)
         assertTrue(File(dir, "26-screen-viewed-overview.png").length() > 0)
     }
@@ -523,7 +524,7 @@ class SnapshotTest {
         val path = System.getenv("DYSKLINK_SNAPSHOTS") ?: return
         val dir = File(path).apply { mkdirs() }
         val all = listOf(phone, tablet, mac)
-        val settings = UiState(page = Page.Settings)
+        val settings = settingsAt(SettingsTab.Phones)
         fun p(way: ExtendWay, r: ExtendReadiness, problem: ExtendProblem? = null) = ExtendProbe(way, r, problem)
         fun linux(desktop: String, probes: List<ExtendProbe>, session: String = "wayland") =
             HostChecks.hints(HostEnv(windows = false, linux = true, env = mapOf("XDG_SESSION_TYPE" to session, "XDG_CURRENT_DESKTOP" to desktop)::get, onPath = { true }, osRelease = "ID=ubuntu\nID_LIKE=debian", extend = probes,
@@ -648,6 +649,8 @@ class SnapshotTest {
         shoot(dir, "11-computer", Fake(all, computers = true), UiState(selectedId = "m1"))
         shoot(dir, "12-new-computer", Fake(listOf(phone, newPc), computers = true), UiState(selectedId = "w1"))
         shoot(dir, "13-light-settings", Fake(all, computers = true), UiState(page = Page.Settings), dark = false)
+        for (tab in SettingsTab.entries) shoot(dir, "5t-settings-${tab.name.lowercase()}", Fake(all, computers = true), settingsAt(tab), height = 1300)
+        shoot(dir, "5t-light-settings-phones", Fake(all, computers = true), settingsAt(SettingsTab.Phones), dark = false, height = 1300)
         assertTrue(File(dir, "1-empty.png").length() > 0)
     }
 
@@ -664,7 +667,7 @@ class SnapshotTest {
             id.dysklink.desktop.AdbDevice("ZY22", "unauthorized", ""),
             id.dysklink.desktop.AdbDevice("0A1B2C", "offline", "Galaxy A54"),
         )
-        val settings = UiState(page = Page.Settings)
+        val settings = settingsAt(SettingsTab.Phones)
         shoot(dir, "40-usb-overview-connected", Fake(listOf(onUsb, tablet, mac), usb = UsbState(adbPath = winAdb, devices = devices.take(1), windows = true)), height = 1250)
         shoot(dir, "40b-light-usb-overview-connected", Fake(listOf(onUsb, tablet, mac), usb = UsbState(adbPath = winAdb, devices = devices.take(1), windows = true)), dark = false, height = 1250)
         shoot(dir, "41-usb-settings-devices-windows", Fake(all, usb = UsbState(adbPath = winAdb, devices = devices, windows = true)), settings, height = 1900)
@@ -690,7 +693,7 @@ class SnapshotTest {
         val fedoraX11 = linux(mapOf("XDG_SESSION_TYPE" to "x11", "XDG_CURRENT_DESKTOP" to "XFCE"), setOf("pactl", "firewall-cmd"), "ID=fedora\n")
         val archX11 = linux(mapOf("XDG_SESSION_TYPE" to "x11"), setOf("ufw", "xdotool"), "ID=arch\n")
         val windows = HostChecks.hints(HostEnv(windows = true, linux = false, publicNetwork = true))
-        val settings = UiState(page = Page.Settings)
+        val settings = settingsAt(SettingsTab.Phones)
         val on = { host: HostHints -> Fake(all, soundOut = true, screenOut = true, computers = true, remote = true, host = host) }
         shoot(dir, "60-hints-settings-wayland-gnome", on(gnomeWayland), settings, height = 2900)
         shoot(dir, "60b-hints-settings-wayland-gnome-light", on(gnomeWayland), settings, dark = false, height = 2900)
@@ -802,7 +805,7 @@ class SnapshotTest {
         val ready = WaylandHost(route = InputRoute.PORTAL, screenCast = true, gst = GstCheck(true, true, true))
         val ubuntu = "ID=ubuntu\nID_LIKE=debian\n"
         val on = { h: HostHints -> Fake(all, soundOut = true, screenOut = true, computers = true, remote = true, host = h) }
-        val settings = UiState(page = Page.Settings)
+        val settings = settingsAt(SettingsTab.Phones)
         shoot(dir, "70-wayland-gnome-first-time", on(host("ubuntu:GNOME", ubuntu, ready)), settings, height = 2600)
         shoot(dir, "70b-wayland-gnome-waiting", on(host("ubuntu:GNOME", ubuntu, ready.copy(input = PortalStatus(PortalPhase.Waiting), screen = PortalStatus(PortalPhase.Waiting)))), settings, height = 2600)
         shoot(dir, "70c-wayland-gnome-denied", on(host("ubuntu:GNOME", ubuntu, ready.copy(input = PortalStatus(PortalPhase.Denied), screen = PortalStatus(PortalPhase.Denied)))), settings, height = 2600)
@@ -1045,9 +1048,11 @@ class SnapshotTest {
         val kde = wayland.copy(hints = HostChecks.windowTidyHints(false, true, "KDE", null, HotkeyStatus(HotkeyBackend.Command), TidyMods.CtrlAlt))
         shoot(dir, "a5b-tools-wayland-kde", Fake(all, launcher = FakeLauncher(LauncherView()), tidy = kde), off, height = 900)
         val tray = TrayMenuConfig().setShown(TraySection.Water, false).setShown(TraySection.Launcher, true).move(TraySection.Launcher, -1).move(TraySection.Launcher, -1)
-        shoot(dir, "a6-settings-tray-menu", Fake(all, tray = tray), UiState(page = Page.Settings), height = 1500)
-        shoot(dir, "a6b-light-settings-tray-menu", Fake(all, tray = tray), UiState(page = Page.Settings), dark = false, height = 1500)
+        shoot(dir, "a6-settings-tray-menu", Fake(all, tray = tray), settingsAt(SettingsTab.Tray), height = 1500)
+        shoot(dir, "a6b-light-settings-tray-menu", Fake(all, tray = tray), settingsAt(SettingsTab.Tray), dark = false, height = 1500)
         assertTrue(File(dir, "a0-launcher-results.png").length() > 0)
     }
 
 }
+
+private fun settingsAt(tab: SettingsTab) = UiState(page = Page.Settings).also { it.settingsTab = tab }

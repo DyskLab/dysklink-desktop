@@ -282,6 +282,53 @@ fun IconWell(icon: ImageVector, tint: Color, size: Dp = 34.dp, background: Color
     }
 }
 
+/**
+ * A setting in a card of its own, as on the Mac: an icon in a tinted square, the title and a line under it, and on the
+ * right a switch or buttons ([trailing]). Anything more (hints, a list) goes under it in [content].
+ */
+@Composable
+fun SettingCard(
+    icon: ImageVector,
+    title: String,
+    detail: String? = null,
+    tint: Color = Dysk.colors.mint,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    val colors = Dysk.colors
+    GlassCard(padding = 16.dp) {
+        Row(Modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.5f), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                DyskIcon(icon, tint, 17.dp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f).padding(end = Space.sm)) {
+                Text(title, color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                detail?.let { Spacer(Modifier.height(2.dp)); Text(it, color = colors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp) }
+            }
+            trailing?.invoke()
+        }
+        if (content != null) {
+            Spacer(Modifier.height(Space.xs))
+            content()
+        }
+    }
+}
+
+/** A [SettingCard] with a switch. */
+@Composable
+fun SwitchCard(
+    icon: ImageVector,
+    title: String,
+    detail: String?,
+    checked: Boolean,
+    enabled: Boolean = true,
+    tint: Color = Dysk.colors.mint,
+    onChange: (Boolean) -> Unit,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
+) = SettingCard(icon, title, detail, tint, enabled, trailing = { DyskSwitch(checked, enabled, onChange) }, content = content)
+
 /** A setting: title and detail on the left, a mint switch on the right. */
 @Composable
 fun SettingRow(title: String, detail: String? = null, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {

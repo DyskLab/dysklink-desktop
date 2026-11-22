@@ -262,6 +262,9 @@ interface DeskModel {
     /** Opens the installer for this system in the browser. Nothing installs by itself. */
     fun downloadUpdate()
     fun skipUpdate()
+    /** Whether DyskLink looks for a new version once a day by itself. */
+    val updatesAuto: StateFlow<Boolean> get() = kotlinx.coroutines.flow.MutableStateFlow(true)
+    fun setUpdatesAuto(on: Boolean) {}
 }
 
 private val MEMORY_GAME_KEYS = GameKeyStore(null)
@@ -285,6 +288,9 @@ enum class Page { Device, Tools, History, Settings }
 
 enum class ToolsView { Tools, Desk, Care }
 
+/** The parts of Settings, in a row of pills as in the Mac's Advanced page. */
+enum class SettingsTab(val title: String) { General("General"), Phones("Phones"), Island("Island"), Tray("Tray menu"), Computers("Computers"), Connection("Files and connection") }
+
 /** What the window is showing. Kept outside the window so the tray can open a device. */
 class UiState(page: Page = Page.Device, selectedId: String? = null, tab: String = "overview") {
     var page by mutableStateOf(page)
@@ -298,6 +304,8 @@ class UiState(page: Page = Page.Device, selectedId: String? = null, tab: String 
     val camera = CameraView()
     /** The Tools page shows the notch tools, or PC care. */
     var toolsView by mutableStateOf(ToolsView.Tools)
+    /** The part of Settings shown; kept while the window is open, as the Mac keeps the last category. */
+    var settingsTab by mutableStateOf(SettingsTab.General)
     /** A number to start an SMS to, from the contacts: the Messages tab opens a new message with it. */
     var smsTo by mutableStateOf<String?>(null)
 

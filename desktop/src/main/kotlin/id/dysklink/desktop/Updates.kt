@@ -138,6 +138,14 @@ class Updater(
 ) {
     private val _state = MutableStateFlow(UpdateState(lastChecked = settings.string("update.checked")?.toLongOrNull()))
     val state: StateFlow<UpdateState> = _state.asStateFlow()
+    private val _auto = MutableStateFlow(settings.string("update.auto") != "false")
+    /** Whether the daily check runs; Check now always works. */
+    val auto: StateFlow<Boolean> = _auto.asStateFlow()
+
+    fun setAuto(on: Boolean) {
+        _auto.value = on
+        settings.set("update.auto", on.toString())
+    }
 
     /** Checks now if a day has passed since the last check, then once an hour sees whether another day has. */
     fun start() {
@@ -145,7 +153,7 @@ class Updater(
             delay(15_000)
             while (true) {
                 val last = _state.value.lastChecked ?: 0
-                if (clock() - last >= DAY_MS) check(manual = false)
+                if (_auto.value && clock() - last >= DAY_MS) check(manual = false)
                 delay(HOUR_MS)
             }
         }
